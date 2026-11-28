@@ -2,7 +2,7 @@
 Binary sentiment classification (positive vs. negative) on IMDB movie reviews using Recurrent Neural Networks.
 ## Baseline Experiments (Vanilla RNN)
 
-| Experiment | Sequence Handling | Peak Val Acc | Test Acc | Key Takeaway |
-| :--- | :--- | :---: | :---: | :--- |
-| **1. Naive Vanilla RNN** | Post-padded (`out[:, -1, :]`) | 51.35% | 49.08% | Trailing `<PAD>` tokens wash out hidden state |
-| **2. Fixed Vanilla RNN** | Last real token (`last_idx`) | 78.58% | 75.96% | Fixing padding unlocks learning, though val loss swings due to unclipped vanilla RNN gradients |
+| Experiment | Sequence Handling | Test Acc | Key Takeaway |
+| :--- | :--- | :---: | :--- |
+| **1. `NaiveRNN`** | Post-padded (`out[:, -1, :]`) | 50.07% | Trailing `<PAD>` tokens wash out the hidden state |
+| **2. `LengthAwareRNN`** | Last real token (`last_idx`) | 84.05% | Indexing each review's actual last non-pad token unlocks strong learning |
