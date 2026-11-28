@@ -1,16 +1,23 @@
-# IMDB Sentiment Classification with PyTorch RNNs
+# imdb-sentiment-rnn
 
-Binary sentiment classification (positive vs. negative) on IMDB movie reviews built from scratch in PyTorch. Beyond hitting solid accuracy, this repository isolates and documents **why naive vanilla RNNs fail on padded text sequences** and how fixing sequence-length indexing unlocks learning before even moving to gated architectures.
+Binary sentiment classification on the IMDB 50k movie reviews dataset using PyTorch RNNs.
 
----
+## Data & Preprocessing
 
-## Key Diagnostic Insight: Why `NaiveRNN` Collapsed to ~50%
+All preprocessing is done in `notebooks/01_eda.ipynb`:
 
-Because reviews are post-padded with `<PAD>` (`0`) to a fixed length of **300 tokens**, slicing the final timestep (`out[:, -1, :]`) forces the RNN to process over a hundred empty zero steps after a short review ends—washing out its hidden state before classification.
+- Lowercase text and strip HTML tags/punctuation with regex
+- Remove stopwords and apply Porter stemming
+- Build a 10,000-word vocabulary (`<PAD>` = 0, `<UNK>` = 1)
+- Post-pad or truncate reviews to 300 tokens
 
-```text
-Review (120 words) + Post-Padding (180 <PAD> tokens):
-[ w_1 ] -> [ w_2 ] -> ... -> [ w_120 ] ----------> [ 0 ] -> [ 0 ] -> ... -> [ 0 ]
-                                 ▲                                            ▲
-                 LengthAwareRNN reads HERE                     NaiveRNN reads HERE
-                  (84.05% Test Accuracy)                       (50.07% Test Accuracy)
+## Models & Results
+
+Both models share the same setup: `nn.Embedding(10000, 100)` -> 1-layer `nn.RNN(100, 128)` -> `nn.Linear(128, 1)`, trained with `BCEWithLogitsLoss` and `Adam (lr=0.001)`.
+
+| Model | Hidden State Used | Test Accuracy |
+| :--- | :--- | :---: |
+| `NaiveRNN` | Final timestep (`out[:, -1, :]`) | 50.07% |
+| `LengthAwareRNN` | Last non-pad token (`last_idx`) | 84.05% |
+
+`NaiveRNN` stayed stuck around 50% because most cleaned reviews are much shorter than 300 tokens. Taking `out[:, -1, :]` meant the RNN stepped through over a hundred trailing `<PAD>` zeros after a review ended, washing out the hidden state. Indexing each review at its actual last real token jumped test accuracy to 84.05% without changing the RNN cell.
